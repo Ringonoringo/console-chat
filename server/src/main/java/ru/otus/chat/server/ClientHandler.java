@@ -23,8 +23,11 @@ public class ClientHandler {
         this.socket = socket;
         this.in = new DataInputStream(socket.getInputStream());
         this.out = new DataOutputStream(socket.getOutputStream());
-        userCount++;
-        username = "user" + userCount;
+        sendMessage("Введите nickname:");
+        username = in.readUTF();
+        sendMessage("Вы вошли в чат");
+        server.broadcastMessage(username + " вошел в чат");
+
         new Thread(() -> {
             try {
                 System.out.println("Клиент подключился ");
@@ -35,7 +38,11 @@ public class ClientHandler {
                             sendMessage("/exitok");
                             break;
                         }
-
+                        if (message.startsWith("/w")) {
+                            String[] values = message.split(" ");
+                            String notice = message.substring(message.indexOf(" ", 3));
+                            server.privateMessage(values[1], username + " private message : " + notice);
+                        }
 
                     } else {
                         server.broadcastMessage(username + " : " + message);
