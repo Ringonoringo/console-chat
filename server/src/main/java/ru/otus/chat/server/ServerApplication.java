@@ -6,6 +6,6 @@ import java.net.Socket;
 
 public class ServerApplication {
     public static void main(String[] args) {
-        new Server(8991).start();
+        new Server(8189).start();
     }
 }

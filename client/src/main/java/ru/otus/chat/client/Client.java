@@ -13,7 +13,7 @@ public class Client {
 
     public Client() throws IOException {
         Scanner scanner = new Scanner(System.in);
-        socket = new Socket("localhost", 8991);
+        socket = new Socket("localhost", 8189);
         in = new DataInputStream(socket.getInputStream());
         out = new DataOutputStream(socket.getOutputStream());
 
@@ -24,9 +24,6 @@ public class Client {
                     if (message.startsWith("/")) {
                         if (message.startsWith("/exitok")) {
                             break;
-                        }
-                        if (message.startsWith("/w")){
-                            System.out.println(message);
                         }
                     } else {
                         System.out.println(message);

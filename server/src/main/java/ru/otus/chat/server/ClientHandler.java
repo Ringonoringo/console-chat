@@ -10,7 +10,9 @@ public class ClientHandler {
     private Socket socket;
     private DataInputStream in;
     private DataOutputStream out;
+
     private String username;
+    private static int userCount = 0;
 
     public String getUsername() {
         return username;
@@ -21,25 +23,20 @@ public class ClientHandler {
         this.socket = socket;
         this.in = new DataInputStream(socket.getInputStream());
         this.out = new DataOutputStream(socket.getOutputStream());
-        sendMessage("Введите nickname:");
-        username = in.readUTF();
-        sendMessage("Вы вошли в чат");
-        server.broadcastMessage(username + " вошел в чат");
+        userCount++;
+        username = "user" + userCount;
         new Thread(() -> {
             try {
-                System.out.println("Клиент подключился " + username);
+                System.out.println("Клиент подключился ");
                 while (true) {
                     String message = in.readUTF();
                     if (message.startsWith("/")) {
-                        if (message.startsWith("/exit")) {
+                        if (message.startsWith("/exit")){
                             sendMessage("/exitok");
                             break;
                         }
-                        if (message.startsWith("/w")) {
-                            String[] values = message.split(" ");
-                            String notice = message.substring(message.indexOf(" ", 3));
-                            server.privateMessage(values[1], username + "private : " + notice);
-                        }
+
+
                     } else {
                         server.broadcastMessage(username + " : " + message);
                     }
@@ -60,7 +57,7 @@ public class ClientHandler {
         }
     }
 
-    public void disconnect() {
+    public void disconnect(){
         server.unsubscribe(this);
         try {
             in.close();
