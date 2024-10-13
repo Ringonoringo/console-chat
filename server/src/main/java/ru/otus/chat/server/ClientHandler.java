@@ -12,7 +12,7 @@ public class ClientHandler {
     private DataOutputStream out;
 
     private String username;
-    private static int userCount = 0;
+    // private static int userCount = 0;
 
     public String getUsername() {
         return username;
@@ -38,10 +38,12 @@ public class ClientHandler {
                             sendMessage("/exitok");
                             break;
                         }
-                        if (message.startsWith("/w")) {
+                        if (message.startsWith("/ w")) {
+                            message = message.trim().replaceAll("\\s+", " ");
                             String[] values = message.split(" ");
-                            String notice = message.substring(message.indexOf(" ", 3));
-                            server.privateMessage(values[1], username + " private message : " + notice);
+                            String recipient = values[2];
+                            String notice = values[3];
+                            server.privateMessage(this, recipient, notice);
                         }
 
                     } else {
