@@ -25,7 +25,7 @@ public class Client {
                         if (message.startsWith("/exitok")) {
                             break;
                         }
-                        if (message.startsWith("/w")){
+                        if (message.startsWith("/ w")){
                             System.out.println(message);
                         }
                     } else {
