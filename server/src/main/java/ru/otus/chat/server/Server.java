@@ -9,10 +9,16 @@ import java.util.Map;
 public class Server {
     private int port;
     private Map< String, ClientHandler> clients;
+    private AuthenticatedProvider authenticatedProvider;
 
     public Server(int port) {
         this.port = port;
         clients = new HashMap<>();
+        authenticatedProvider = new InMemoryAuthenticationProvider(this);
+        authenticatedProvider.initialize();
+    }
+    public AuthenticatedProvider getAuthenticatedProvider() {
+        return authenticatedProvider;
     }
 
     public void start() {
@@ -47,5 +53,12 @@ public class Server {
             } else {
                 clientHandler.sendMessage("Пользователя " + name + " нет в сети или неверно введен никнейм");
             }
+    }
+    public boolean isUsernameBusy(String username) {
+            if (clients.containsKey(username)) {
+                return true;
+            }
+
+        return false;
     }
 }

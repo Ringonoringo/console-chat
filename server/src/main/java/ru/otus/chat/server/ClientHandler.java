@@ -12,10 +12,14 @@ public class ClientHandler {
     private DataOutputStream out;
 
     private String username;
-   // private static int userCount = 0;
+
 
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public ClientHandler(Server server, Socket socket) throws IOException {
@@ -31,10 +35,50 @@ public class ClientHandler {
         new Thread(() -> {
             try {
                 System.out.println("Клиент подключился ");
+                //цикл аутентификации
                 while (true) {
                     String message = in.readUTF();
                     if (message.startsWith("/")) {
-                        if (message.startsWith("/exit")){
+                        if (message.startsWith("/exit")) {
+                            sendMessage("/exitok");
+                            break;
+                        }
+                        // /auth login password
+                        if (message.startsWith("/auth ")) {
+                            String[] elements = message.split(" ");
+                            if (elements.length != 3) {
+                                sendMessage("Неверный формат команды /auth ");
+                                continue;
+                            }
+                            if (server.getAuthenticatedProvider()
+                                    .authenticate(this,elements[1], elements[2])){
+                                break;
+                            }
+                            continue;
+                        }
+                        // /reg login password username
+                        if (message.startsWith("/reg ")) {
+                            String[] elements = message.split(" ");
+                            if (elements.length != 4) {
+                                sendMessage("Неверный формат команды /reg ");
+                                continue;
+                            }
+                            if (server.getAuthenticatedProvider()
+                                    .registration(this,elements[1], elements[2], elements[3])){
+                                break;
+                            }
+                            continue;
+                        }
+                    }
+                    sendMessage("Перед работой необходимо пройти аутентификацию командой " +
+                            "/auth login password или регистрацию командой /reg login password username");
+                }
+                System.out.println("Клиент "+ username+ " успешно прошел аутентификацию");
+                //цикл работы
+                while (true) {
+                    String message = in.readUTF();
+                    if (message.startsWith("/")) {
+                        if (message.startsWith("/exit")) {
                             sendMessage("/exitok");
                             break;
                         }
@@ -66,7 +110,7 @@ public class ClientHandler {
         }
     }
 
-    public void disconnect(){
+    public void disconnect() {
         server.unsubscribe(this);
         try {
             in.close();
