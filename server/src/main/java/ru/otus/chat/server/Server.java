@@ -3,16 +3,27 @@ package ru.otus.chat.server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Server {
     private int port;
-    private List<ClientHandler> clients;
+    private Map<String, ClientHandler> clients;
+    private AuthenticatedProvider authenticatedProvider;
+
+    public Map<String, ClientHandler> getClients() {
+        return clients;
+    }
 
     public Server(int port) {
         this.port = port;
-        clients = new ArrayList<>();
+        clients = new HashMap<>();
+        authenticatedProvider = new InMemoryAuthenticationProvider(this);
+        authenticatedProvider.initialize();
+    }
+
+    public AuthenticatedProvider getAuthenticatedProvider() {
+        return authenticatedProvider;
     }
 
     public void start() {
@@ -28,17 +39,41 @@ public class Server {
     }
 
     public synchronized void subscribe(ClientHandler clientHandler) {
-        clients.add(clientHandler);
+        clients.put(clientHandler.getUsername(), clientHandler);
     }
 
     public synchronized void unsubscribe(ClientHandler clientHandler) {
-        clients.remove(clientHandler);
+        clients.remove(clientHandler.getUsername());
     }
 
     public synchronized void broadcastMessage(String message) {
-        for (ClientHandler client : clients) {
-            client.sendMessage(message);
+        for (Map.Entry<String, ClientHandler> client : clients.entrySet()) {
+            client.getValue().sendMessage(message);
         }
     }
 
+    public synchronized void privateMessage(ClientHandler clientHandler, String name, String message) {
+        if (clients.containsKey(name)) {
+            clients.get(name).sendMessage(clientHandler.getUsername() + " private message: " + message);
+            clientHandler.sendMessage("Отправлено сообщение " + name + " " + message);
+        } else {
+            clientHandler.sendMessage("Пользователя " + name + " нет в сети или неверно введен никнейм");
+        }
+    }
+
+    public boolean isUsernameBusy(String username) {
+        if (clients.containsKey(username)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean isClientExists(ClientHandler clientHandler, String name) {
+        if (clients.containsKey(name)) {
+            return true;
+        }
+        clientHandler.sendMessage("Указанное имя пользователя не существует");
+        return false;
+    }
 }
