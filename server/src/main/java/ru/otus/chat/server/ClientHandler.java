@@ -12,6 +12,7 @@ public class ClientHandler {
     private DataOutputStream out;
 
     private String username;
+    private String userrole;
 
 
     public String getUsername() {
@@ -22,15 +23,20 @@ public class ClientHandler {
         this.username = username;
     }
 
+    public void setUserrole(String userrole) {
+        this.userrole = userrole;
+    }
+
+
     public ClientHandler(Server server, Socket socket) throws IOException {
         this.server = server;
         this.socket = socket;
         this.in = new DataInputStream(socket.getInputStream());
         this.out = new DataOutputStream(socket.getOutputStream());
-        sendMessage("Введите nickname:");
-        username = in.readUTF();
-        sendMessage("Вы вошли в чат");
-        server.broadcastMessage(username + " вошел в чат");
+        //sendMessage("Введите nickname:");
+        //username = in.readUTF();
+       // sendMessage("Вы вошли в чат");
+        //server.broadcastMessage(username + " вошел в чат");
 
         new Thread(() -> {
             try {
@@ -51,7 +57,7 @@ public class ClientHandler {
                                 continue;
                             }
                             if (server.getAuthenticatedProvider()
-                                    .authenticate(this,elements[1], elements[2])){
+                                    .authenticate(this, elements[1], elements[2])) {
                                 break;
                             }
                             continue;
@@ -64,30 +70,45 @@ public class ClientHandler {
                                 continue;
                             }
                             if (server.getAuthenticatedProvider()
-                                    .registration(this,elements[1], elements[2], elements[3])){
+                                    .registration(this, elements[1], elements[2], elements[3], elements[4])) {
                                 break;
                             }
                             continue;
                         }
                     }
                     sendMessage("Перед работой необходимо пройти аутентификацию командой " +
-                            "/auth login password или регистрацию командой /reg login password username");
+                            "/auth login password или регистрацию командой /reg login password username userrole");
                 }
-                System.out.println("Клиент "+ username+ " успешно прошел аутентификацию");
+                System.out.println("Клиент " + username + " успешно прошел аутентификацию");
                 //цикл работы
                 while (true) {
                     String message = in.readUTF();
                     if (message.startsWith("/")) {
-                        if (message.startsWith("/exit")) {
-                            sendMessage("/exitok");
+                        if (message.startsWith("/exit ")) {
+                            sendMessage("/exitok ");
                             break;
                         }
-                        if (message.startsWith("/ w")) {
+                        if (message.startsWith("/kickok ")) {
+                            break;
+                        }
+                        if (message.startsWith("/w ")) {
                             message = message.trim().replaceAll("\\s+", " ");
                             String[] values = message.split(" ");
-                            String recipient = values[2];
-                            String notice = values[3];
+                            String recipient = values[1];
+                            String notice = values[2];
                             server.privateMessage(this, recipient, notice);
+                        }
+                        if (message.startsWith("/kick ")) {
+                            String[] values = message.split(" ");
+                            String nameUser = values[1];
+                            if (values.length != 2) {
+                                sendMessage("Неверный формат команды /kick ");
+                                continue;
+                            }
+                            if (userrole.equals("ADMIN") && server.isClientExists(this, nameUser)) {
+                                sendMessage("Вы отключили " + nameUser + " от чата");
+                                server.privateMessage(this, nameUser, "/kikok");
+                            } else sendMessage("Только ADMIN могут отключать пользователей от чата");
                         }
 
                     } else {
@@ -128,4 +149,5 @@ public class ClientHandler {
             throw new RuntimeException(e);
         }
     }
+
 }

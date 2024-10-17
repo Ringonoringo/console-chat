@@ -8,8 +8,12 @@ import java.util.Map;
 
 public class Server {
     private int port;
-    private Map< String, ClientHandler> clients;
+    private Map<String, ClientHandler> clients;
     private AuthenticatedProvider authenticatedProvider;
+
+    public Map<String, ClientHandler> getClients() {
+        return clients;
+    }
 
     public Server(int port) {
         this.port = port;
@@ -17,6 +21,7 @@ public class Server {
         authenticatedProvider = new InMemoryAuthenticationProvider(this);
         authenticatedProvider.initialize();
     }
+
     public AuthenticatedProvider getAuthenticatedProvider() {
         return authenticatedProvider;
     }
@@ -46,19 +51,29 @@ public class Server {
             client.getValue().sendMessage(message);
         }
     }
-    public synchronized void privateMessage(ClientHandler clientHandler, String name, String message) {
-            if (clients.containsKey(name)) {
-                clients.get(name).sendMessage(clientHandler.getUsername() + " private message: " + message);
-                clientHandler.sendMessage("Отправлено сообщение " + name + " " + message);
-            } else {
-                clientHandler.sendMessage("Пользователя " + name + " нет в сети или неверно введен никнейм");
-            }
-    }
-    public boolean isUsernameBusy(String username) {
-            if (clients.containsKey(username)) {
-                return true;
-            }
 
+    public synchronized void privateMessage(ClientHandler clientHandler, String name, String message) {
+        if (clients.containsKey(name)) {
+            clients.get(name).sendMessage(clientHandler.getUsername() + " private message: " + message);
+            clientHandler.sendMessage("Отправлено сообщение " + name + " " + message);
+        } else {
+            clientHandler.sendMessage("Пользователя " + name + " нет в сети или неверно введен никнейм");
+        }
+    }
+
+    public boolean isUsernameBusy(String username) {
+        if (clients.containsKey(username)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public boolean isClientExists(ClientHandler clientHandler, String name) {
+        if (clients.containsKey(name)) {
+            return true;
+        }
+        clientHandler.sendMessage("Указанное имя пользователя не существует");
         return false;
     }
 }

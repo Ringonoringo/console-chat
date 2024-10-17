@@ -22,15 +22,21 @@ public class Client {
                 while (true) {
                     String message = in.readUTF();
                     if (message.startsWith("/")) {
-                        if (message.startsWith("/exitok")) {
+                        if (message.startsWith("/exitok ")) {
                             break;
                         }
+                        if (message.startsWith("/kickok ")) {
+                            System.out.println("Вас отключили от чата");
+                            out.writeUTF("/kickok ");
+                            break;
+
+                        }
                         if (message.startsWith("/authok ")) {
-                            System.out.println("Аутентификация прошла успешно с именем пользователя: "+
+                            System.out.println("Аутентификация прошла успешно с именем пользователя: " +
                                     message.split(" ")[1]);
                         }
                         if (message.startsWith("/regok ")) {
-                            System.out.println("регистрация прошла успешно с именем пользователя: "+
+                            System.out.println("регистрация прошла успешно с именем пользователя: " +
                                     message.split(" ")[1]);
                         }
                     } else {
@@ -53,7 +59,7 @@ public class Client {
         }
     }
 
-    public void disconnect(){
+    public void disconnect() {
         try {
             in.close();
         } catch (IOException e) {
