@@ -10,12 +10,13 @@ public class Client {
     Socket socket;
     DataInputStream in;
     DataOutputStream out;
+    Scanner scanner;
 
     public Client() throws IOException {
-        Scanner scanner = new Scanner(System.in);
+        this.scanner = new Scanner(System.in);
         socket = new Socket("localhost", 8189);
-        in = new DataInputStream(socket.getInputStream());
-        out = new DataOutputStream(socket.getOutputStream());
+        this.in = new DataInputStream(socket.getInputStream());
+        this.out = new DataOutputStream(socket.getOutputStream());
 
         new Thread(() -> {
             try {

@@ -1,14 +1,20 @@
 package ru.otus.chat.server;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class InMemoryAuthenticationProvider implements AuthenticatedProvider {
-    private class User {
+    private final Server server;
+    private final List<User> users;
+    private UserServiceJdbcImpl userServiceJdbc;
+    private boolean inMemory;
+  /*  private class User {
         private String login;
         private String password;
         private String username;
         private String userrole;
+
 
         public User(String login, String password, String username, String userrole) {
             this.login = login;
@@ -17,22 +23,39 @@ public class InMemoryAuthenticationProvider implements AuthenticatedProvider {
             this.userrole = userrole;
         }
     }
-
-    private Server server;
-    private List<User> users;
-
+*/
     public InMemoryAuthenticationProvider(Server server) {
         this.server = server;
         this.users = new ArrayList<>();
+        inMemory = true;
+       /*
         this.users.add(new User("login1", "password1", "username1", "ADMIN"));
         this.users.add(new User("qwe", "qwe", "qwe1", "USER"));
         this.users.add(new User("asd", "asd", "asd1", "USER"));
         this.users.add(new User("zxc", "zxc", "zxc1", "USER"));
+        */
+    }
+    private String getUserNameByLoginAndPassword(String login, String password) {
+        if (inMemory){
+            for (User user : users) {
+                if (user.getLogin().equals(login) && user.getPassword().equals(password)) {
+                    return user.getUsername();
+                }
+            }
+            return null;
+        }
+        return userServiceJdbc.getUsername(login, password);
     }
 
     @Override
     public void initialize() {
-        System.out.println("Сервис аутентификации запущен: In memory режим");
+        try {
+            userServiceJdbc = new UserServiceJdbcImpl();
+            System.out.println("Сервис аутентификации запущен. DB режим");
+            inMemory = false;
+        } catch (SQLException e) {
+            System.out.println("Сервис аутентификации запущен. In memory режим");
+        }
     }
 
     private String getUsernameByLoginAndPassword(String login, String password) {
@@ -73,25 +96,46 @@ public class InMemoryAuthenticationProvider implements AuthenticatedProvider {
     }
 
     private boolean isLoginAlreadyExist(String login) {
-        for (User user : users) {
-            if (user.login.equals(login)) {
-                return true;
+        if(inMemory){
+            for (User user : users) {
+                if (user.getLogin().equals(login)){
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
+        return userServiceJdbc.isLogin(login);
     }
 
     private boolean isUsernameAlreadyExist(String username) {
-        for (User user : users) {
-            if (user.username.equals(username)) {
-                return true;
+        if(inMemory){
+            for (User user : users) {
+                if (user.getUsername().equals(username)){
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
+        return userServiceJdbc.isUserName(username);
+    }
+    private Role getRole(String username){
+        if (inMemory){
+            for (User user : users) {
+                if (user.getUsername().equals(username)){
+                    return user.getRole();
+                }
+            }
+            return null;
+        }
+
+        if(userServiceJdbc.getRole(username).equals("ADMIN")){
+            return Role.ADMIN;
+        }
+        return Role.USER;
     }
 
     @Override
-    public boolean registration(ClientHandler clientHandler, String login, String password, String username, String userrole) {
+    public boolean registration(ClientHandler clientHandler, String login, String password, String username) {
         if (login.trim().length() < 3 || password.trim().length() < 6
                 || username.trim().length() < 2) {
             clientHandler.sendMessage("Требования логин 3+ символа, пароль 6+ символа," +
@@ -106,16 +150,27 @@ public class InMemoryAuthenticationProvider implements AuthenticatedProvider {
             clientHandler.sendMessage("Указанное имя пользователя уже занято");
             return false;
         }
-        if (!(userrole.equals("ADMIN") || userrole.equals("USER"))) {
-            clientHandler.sendMessage("Роль может быть только ADMIN или USER");
+        if (inMemory){
+            users.add(new User(login, password, username));
+        }
+        if (!inMemory && userServiceJdbc.addUser(userServiceJdbc.getAll().size()+1,new User(login, password, username)) == -1){
+            String msgError = username + " не зарегистрирован.";
+            System.out.println(msgError);
+            clientHandler.sendMessage(msgError);
             return false;
         }
-        users.add(new User(login, password, username, userrole));
+        //users.add(new User(username));
         clientHandler.setUsername(username);
-        clientHandler.setUserrole(userrole);
         server.subscribe(clientHandler);
         clientHandler.sendMessage("/regok " + username);
 
         return true;
     }
+    @Override
+    public boolean isAdmin(ClientHandler clientHandler) {
+        return getRole(clientHandler.getUsername()) == Role.ADMIN;
+    }
+}
+enum Role {
+    ADMIN, USER
 }
